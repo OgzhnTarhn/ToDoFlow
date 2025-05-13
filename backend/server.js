@@ -35,9 +35,11 @@ app.post("/api/todos", (req, res) => {
     const newTodo = {
         id: Date.now(),
         text: req.body.text,
+        category: req.body.category || "Genel",   // <-- YENİ
         createdAt: new Date().toISOString(),
         completed: false
     };
+
     todos.push(newTodo);
     writeData(todos);
     res.status(201).json(newTodo);

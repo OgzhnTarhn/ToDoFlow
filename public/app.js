@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const list = document.getElementById("todoList");
     const submitBtn = form.querySelector("button[type='submit']");
     const toggleBtn = document.getElementById("toggleCompleted");
+    const categorySelect = document.getElementById("todoCategory");
     let hideCompleted = false;
 
     fetch("/api/todos")
