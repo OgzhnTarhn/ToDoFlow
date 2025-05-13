@@ -34,7 +34,9 @@ app.post("/api/todos", (req, res) => {
     const todos = readData();
     const newTodo = {
         id: Date.now(),
-        text: req.body.text
+        text: req.body.text,
+        createdAt: new Date().toISOString(),
+        completed: false
     };
     todos.push(newTodo);
     writeData(todos);
