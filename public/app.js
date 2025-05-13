@@ -12,18 +12,42 @@ document.addEventListener("DOMContentLoaded", function () {
         const text = input.value.trim();
         if (!text) return alert("Boş todo eklenemez!");
 
-        fetch("/api/todos", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text })
-        })
-            .then(res => res.json())
-            .then(todo => {
-                addTodoToUI(todo);
-                input.value = "";
-                input.focus();
-            });
+        const editId = form.getAttribute("data-edit-id");
+
+        if (editId) {
+            // Güncelleme modu
+            fetch("/api/todos/" + editId, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text })
+            })
+                .then(res => res.json())
+                .then(updatedTodo => {
+                    list.innerHTML = ""; // Listeyi temizle
+                    fetch("/api/todos")
+                        .then(res => res.json())
+                        .then(data => data.forEach(todo => addTodoToUI(todo)));
+
+                    form.removeAttribute("data-edit-id");
+                    submitBtn.textContent = "Ekle";
+                    input.value = "";
+                });
+        } else {
+            // Yeni todo ekleme
+            fetch("/api/todos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text })
+            })
+                .then(res => res.json())
+                .then(todo => {
+                    addTodoToUI(todo);
+                    input.value = "";
+                    input.focus();
+                });
+        }
     });
+
 
     function addTodoToUI(todo) {
         const li = document.createElement("li");
@@ -53,6 +77,15 @@ document.addEventListener("DOMContentLoaded", function () {
                     span.style.textDecoration = updatedTodo.completed ? "line-through" : "none";
                 });
         };
+        const editBtn = document.createElement("button");
+        editBtn.className = "btn btn-warning btn-sm me-1";
+        editBtn.textContent = "✏️";
+        editBtn.onclick = () => {
+            input.value = todo.text;
+            input.focus();
+            submitBtn.textContent = "Güncelle";
+            form.setAttribute("data-edit-id", todo.id);
+        };
 
         const deleteBtn = document.createElement("button");
         deleteBtn.className = "btn btn-danger btn-sm";
@@ -63,6 +96,7 @@ document.addEventListener("DOMContentLoaded", function () {
         };
 
         controls.appendChild(doneBtn);
+        controls.appendChild(editBtn);
         controls.appendChild(deleteBtn);
         li.appendChild(span);
         li.appendChild(controls);
