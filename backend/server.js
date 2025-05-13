@@ -49,6 +49,17 @@ app.delete("/api/todos/:id", (req, res) => {
     writeData(todos);
     res.status(200).json({ message: "Silindi" });
 });
+app.put("/api/todos/:id", (req, res) => {
+    let todos = readData();
+    const index = todos.findIndex(todo => todo.id == req.params.id);
+    if (index !== -1) {
+        todos[index] = { ...todos[index], ...req.body };
+        writeData(todos);
+        res.status(200).json(todos[index]);
+    } else {
+        res.status(404).json({ error: "Todo bulunamadı." });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`Server http://localhost:${PORT} adresinde çalışıyor.`);

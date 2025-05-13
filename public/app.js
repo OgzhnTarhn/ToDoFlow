@@ -40,7 +40,18 @@ document.addEventListener("DOMContentLoaded", function () {
         doneBtn.textContent = "✔";
         doneBtn.onclick = () => {
             todo.completed = !todo.completed;
-            span.style.textDecoration = todo.completed ? "line-through" : "none";
+
+            fetch("/api/todos/" + todo.id, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ completed: todo.completed })
+            })
+                .then(res => res.json())
+                .then(updatedTodo => {
+                    span.style.textDecoration = updatedTodo.completed ? "line-through" : "none";
+                });
         };
 
         const deleteBtn = document.createElement("button");
