@@ -3,6 +3,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const input = document.getElementById("todoInput");
     const list = document.getElementById("todoList");
     const submitBtn = form.querySelector("button[type='submit']");
+    const toggleBtn = document.getElementById("toggleCompleted");
+    let hideCompleted = false;
 
     fetch("/api/todos")
         .then(res => res.json())
@@ -16,7 +18,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const editId = form.getAttribute("data-edit-id");
 
         if (editId) {
-            // GÜNCELLEME modu
+            // Güncelleme modu
             fetch("/api/todos/" + editId, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -24,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
             })
                 .then(res => res.json())
                 .then(() => {
-                    list.innerHTML = ""; // Listeyi temizle
+                    list.innerHTML = "";
                     fetch("/api/todos")
                         .then(res => res.json())
                         .then(data => data.forEach(todo => addTodoToUI(todo)));
@@ -34,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     input.value = "";
                 });
         } else {
-            // YENİ todo ekleme modu
+            // Yeni ekleme modu
             fetch("/api/todos", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -49,14 +51,19 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-
     function addTodoToUI(todo) {
         const li = document.createElement("li");
         li.className = "list-group-item d-flex justify-content-between align-items-center";
 
+        if (todo.completed && hideCompleted) {
+            li.classList.add("d-none");
+        }
+
         const span = document.createElement("span");
         span.textContent = todo.text;
-        if (todo.completed) span.style.textDecoration = "line-through";
+        if (todo.completed) {
+            span.style.textDecoration = "line-through";
+        }
 
         const controls = document.createElement("div");
 
@@ -74,6 +81,11 @@ document.addEventListener("DOMContentLoaded", function () {
             }).then(res => res.json())
                 .then(updatedTodo => {
                     span.style.textDecoration = updatedTodo.completed ? "line-through" : "none";
+                    if (hideCompleted && updatedTodo.completed) {
+                        li.classList.add("d-none");
+                    } else {
+                        li.classList.remove("d-none");
+                    }
                 });
         };
 
@@ -102,4 +114,20 @@ document.addEventListener("DOMContentLoaded", function () {
         li.appendChild(controls);
         list.appendChild(li);
     }
+
+    toggleBtn.addEventListener("click", () => {
+        hideCompleted = !hideCompleted;
+
+        const items = document.querySelectorAll("#todoList li");
+        items.forEach(item => {
+            const isCompleted = item.querySelector("span").style.textDecoration === "line-through";
+            if (isCompleted) {
+                item.classList.toggle("d-none", hideCompleted);
+            }
+        });
+
+        toggleBtn.textContent = hideCompleted
+            ? "👁️ Tamamlananları Göster"
+            : "🫣 Tamamlananları Gizle";
+    });
 });
