@@ -7,24 +7,29 @@ const PORT = 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "../public")));
 
-// JSON dosyasını oku
 function readData() {
-    const data = fs.readFileSync("backend/data.json", "utf-8");
-    return JSON.parse(data);
+    try {
+        const data = fs.readFileSync(path.join(__dirname, "data.json"), "utf-8");
+        return JSON.parse(data);
+    } catch (err) {
+        console.error("Veri okuma hatası:", err.message);
+        return [];
+    }
 }
 
-// JSON dosyasına yaz
 function writeData(todos) {
-    fs.writeFileSync("backend/data.json", JSON.stringify(todos, null, 2));
+    try {
+        fs.writeFileSync(path.join(__dirname, "data.json"), JSON.stringify(todos, null, 2));
+    } catch (err) {
+        console.error("Veri yazma hatası:", err.message);
+    }
 }
 
-// Tüm todo'ları getir
 app.get("/api/todos", (req, res) => {
     const todos = readData();
     res.json(todos);
 });
 
-// Yeni todo ekle
 app.post("/api/todos", (req, res) => {
     const todos = readData();
     const newTodo = {
@@ -36,7 +41,6 @@ app.post("/api/todos", (req, res) => {
     res.status(201).json(newTodo);
 });
 
-// Todo sil (ID ile)
 app.delete("/api/todos/:id", (req, res) => {
     let todos = readData();
     todos = todos.filter(todo => todo.id != req.params.id);

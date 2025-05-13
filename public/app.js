@@ -1,88 +1,56 @@
-//Selectors (Seçiciler) - Style Özellikleri
+console.log("JS yüklendi!");
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("todoForm");
+    const input = document.getElementById("todoInput");
+    const list = document.getElementById("todoList");
 
-//classname , id , tag name
+    // 1. Sayfa açıldığında tüm todo'ları backend'den getir
+    fetch("/api/todos")
+        .then(res => res.json())
+        .then(data => {
+            data.forEach(todo => addTodoToUI(todo));
+        });
 
-//getElementById : id ye göre elementi yakalar
-//getElementByClassName : class ismine göre yakalar.
-//getElementByTagName : etiket ismine göre yakalar.
+    // 2. Form gönderilince backend'e POST yap
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
 
+        fetch("/api/todos", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ text })
+        })
+            .then(res => res.json())
+            .then(newTodo => {
+                addTodoToUI(newTodo);
+                input.value = "";
+            });
+    });
 
+    // 3. Todo'yu HTML'e ekle
+    function addTodoToUI(todo) {
+        const li = document.createElement("li");
+        li.className = "list-group-item d-flex justify-content-between align-items-center";
+        li.textContent = todo.text;
 
+        const btn = document.createElement("button");
+        btn.textContent = "Sil";
+        btn.className = "btn btn-danger btn-sm";
+        btn.onclick = () => deleteTodo(todo.id, li);
 
+        li.appendChild(btn);
+        list.appendChild(li);
+    }
 
-// const button = document.getElementById("todoAddButton");
-
-// console.log(button);
-// console.log(button.id);
-// console.log(button.getAttribute("id"));
-
-// console.log(button.className);
-// console.log(button.getAttribute("class"));
-
-// const classListesi = button.classList[3];
-// const classListesi = button.classList[2];
-
-// const classListesi = button.classList;
-
-// classListesi.forEach(function(className){
-//     console.log(className);
-// })
-
-// console.log(classListesi);
-
-
-// let buttonText = button.textContent;
-// let buttonText2 = button.innerHTML;
-
-
-// console.log(buttonText);
-// console.log(buttonText2);
-
-
-
-// button.innerHTML="<b>Todo Ekleyin</b>";
-
-
-// const todoList = Array.from(document.getElementsByClassName("list-group-item"));
-// todoList.forEach(function(todo){
-//     console.log(todo.textContent);
-// })
-// console.log(todoList);
-
-
-
-// const forms = Array.from(document.getElementsByTagName("form"));
-// forms.forEach(function(form){
-//     console.log(form);
-// })
-// console.log(forms[1]);
-
-
-// const todoList = document.getElementsByTagName("li");
-// console.log(todoList);
-
-
-
-// getElementById - getElementByClassName - getElementByTagName
-
-
-//querySelector - querySelectorAll
-
-
-// const clearButton = document.querySelector("#todoClearButton");
-// console.log(clearButton);
-
-// console.log(document.getElementById("todoClearButton")));
-
-
-// const todoList = document.querySelector(".list-group");
-// console.log(todoList);
-
-//odd ve even
-const todoList = Array.from(document.querySelectorAll("li:nth-child(odd)"));
-
-todoList.forEach(function(todo){
-    todo.style.backgroundColor = "lightgrey";
-})
-
-console.log(todoList);
+    // 4. Todo silme
+    function deleteTodo(id, element) {
+        fetch(`/api/todos/${id}`, { method: "DELETE" })
+            .then(() => {
+                element.remove();
+            });
+    }
+});
