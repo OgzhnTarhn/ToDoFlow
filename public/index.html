@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Todo App</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <meta charset="UTF-8">
+  <title>Gelişmiş Todo App</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-<div class="container mt-5">
-    <h3>Todo Listesi</h3>
-    <form id="todoForm">
-        <input type="text" id="todoInput" class="form-control" placeholder="Yapılacak bir şey yazın">
-        <button class="btn btn-primary mt-3" type="submit">Ekle</button>
+  <div class="container mt-5">
+    <h3>📋 Todo Listesi</h3>
+    <form id="todoForm" class="d-flex gap-2">
+      <input type="text" id="todoInput" class="form-control" placeholder="Yapılacak bir şey yazın">
+      <button class="btn btn-primary" type="submit">Ekle</button>
     </form>
-
     <ul id="todoList" class="list-group mt-4"></ul>
-</div>
+  </div>
 
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
