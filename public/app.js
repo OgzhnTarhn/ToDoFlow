@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("todoForm");
     const input = document.getElementById("todoInput");
     const list = document.getElementById("todoList");
+    const submitBtn = form.querySelector("button[type='submit']");
 
     fetch("/api/todos")
         .then(res => res.json())
@@ -15,14 +16,14 @@ document.addEventListener("DOMContentLoaded", function () {
         const editId = form.getAttribute("data-edit-id");
 
         if (editId) {
-            // Güncelleme modu
+            // GÜNCELLEME modu
             fetch("/api/todos/" + editId, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ text })
             })
                 .then(res => res.json())
-                .then(updatedTodo => {
+                .then(() => {
                     list.innerHTML = ""; // Listeyi temizle
                     fetch("/api/todos")
                         .then(res => res.json())
@@ -33,7 +34,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     input.value = "";
                 });
         } else {
-            // Yeni todo ekleme
+            // YENİ todo ekleme modu
             fetch("/api/todos", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -64,19 +65,18 @@ document.addEventListener("DOMContentLoaded", function () {
         doneBtn.textContent = "✔";
         doneBtn.onclick = () => {
             todo.completed = !todo.completed;
-
             fetch("/api/todos/" + todo.id, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({ completed: todo.completed })
-            })
-                .then(res => res.json())
+            }).then(res => res.json())
                 .then(updatedTodo => {
                     span.style.textDecoration = updatedTodo.completed ? "line-through" : "none";
                 });
         };
+
         const editBtn = document.createElement("button");
         editBtn.className = "btn btn-warning btn-sm me-1";
         editBtn.textContent = "✏️";
