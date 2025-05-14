@@ -1,60 +1,91 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import { Formik, Form, Field } from 'formik';
+import * as Yup from 'yup';
+import { toast } from 'react-toastify';
+import { login, clearError } from '../store/slices/authSlice';
 import './Login.css';
 
+const loginSchema = Yup.object().shape({
+    email: Yup.string()
+        .email('Geçerli bir email adresi giriniz')
+        .required('Email adresi zorunludur'),
+    password: Yup.string()
+        .min(6, 'Şifre en az 6 karakter olmalıdır')
+        .required('Şifre zorunludur')
+});
+
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const { loading, error, isAuthenticated } = useSelector((state) => state.auth);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await axios.post('http://localhost:3001/api/auth/login', {
-        email,
-        password
-      });
-      localStorage.setItem('token', response.data.token);
-      navigate('/todos');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Giriş yapılırken bir hata oluştu');
-    }
-  };
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/');
+        }
+    }, [isAuthenticated, navigate]);
 
-  return (
-    <div className="login-container">
-      <div className="login-box">
-        <h2>Giriş Yap</h2>
-        {error && <div className="error-message">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Email:</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Şifre:</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <button type="submit" className="login-button">Giriş Yap</button>
-        </form>
-        <p className="register-link">
-          Hesabınız yok mu? <Link to="/register">Hesap Oluştur</Link>
-        </p>
-      </div>
-    </div>
-  );
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+            dispatch(clearError());
+        }
+    }, [error, dispatch]);
+
+    const handleSubmit = async (values) => {
+        dispatch(login(values));
+    };
+
+    return (
+        <div className="login-container">
+            <div className="login-box">
+                <h2>Giriş Yap</h2>
+                <Formik
+                    initialValues={{ email: '', password: '' }}
+                    validationSchema={loginSchema}
+                    onSubmit={handleSubmit}
+                >
+                    {({ errors, touched }) => (
+                        <Form>
+                            <div className="form-group">
+                                <Field
+                                    type="email"
+                                    name="email"
+                                    placeholder="Email"
+                                    className={errors.email && touched.email ? 'error' : ''}
+                                />
+                                {errors.email && touched.email && (
+                                    <div className="error-message">{errors.email}</div>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <Field
+                                    type="password"
+                                    name="password"
+                                    placeholder="Şifre"
+                                    className={errors.password && touched.password ? 'error' : ''}
+                                />
+                                {errors.password && touched.password && (
+                                    <div className="error-message">{errors.password}</div>
+                                )}
+                            </div>
+
+                            <button type="submit" disabled={loading}>
+                                {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+                            </button>
+                        </Form>
+                    )}
+                </Formik>
+
+                <p className="register-link">
+                    Hesabınız yok mu? <Link to="/register">Kayıt Ol</Link>
+                </p>
+            </div>
+        </div>
+    );
 };
 
 export default Login; 

@@ -1,92 +1,166 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Formik, Form, Field } from 'formik';
+import * as Yup from 'yup';
+import { toast } from 'react-toastify';
+import { logout } from '../store/slices/authSlice';
+import { fetchTodos, createTodo, updateTodo, deleteTodo, clearError } from '../store/slices/todoSlice';
 import './TodoList.css';
 
+const todoSchema = Yup.object().shape({
+    text: Yup.string()
+        .required('Todo metni zorunludur')
+        .min(3, 'Todo metni en az 3 karakter olmalıdır'),
+    category: Yup.string()
+        .required('Kategori zorunludur')
+});
+
 const TodoList = () => {
-  const [todos, setTodos] = useState([]);
-  const [newTodo, setNewTodo] = useState('');
-  const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const { todos, loading, error } = useSelector((state) => state.todos);
+    const { user } = useSelector((state) => state.auth);
+    const [filter, setFilter] = useState('all');
 
-  useEffect(() => {
-    // Todo listesini yükle
-    fetchTodos();
-  }, []);
+    useEffect(() => {
+        dispatch(fetchTodos());
+    }, [dispatch]);
 
-  const fetchTodos = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3001/api/todos', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setTodos(response.data);
-    } catch (error) {
-      console.error('Todo listesi yüklenirken hata:', error);
-    }
-  };
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+            dispatch(clearError());
+        }
+    }, [error, dispatch]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
+    const handleSubmit = async (values, { resetForm }) => {
+        await dispatch(createTodo(values));
+        resetForm();
+    };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!newTodo.trim()) return;
+    const handleToggleComplete = async (todo) => {
+        dispatch(updateTodo({
+            id: todo._id,
+            todoData: { completed: !todo.completed }
+        }));
+    };
 
-    // Yeni todo ekle
-    setTodos([...todos, { id: Date.now(), text: newTodo, completed: false }]);
-    setNewTodo('');
-  };
+    const handleDelete = async (id) => {
+        if (window.confirm('Bu todo\'yu silmek istediğinizden emin misiniz?')) {
+            dispatch(deleteTodo(id));
+        }
+    };
 
-  const toggleTodo = (id) => {
-    setTodos(todos.map(todo =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    ));
-  };
+    const handleLogout = () => {
+        dispatch(logout());
+    };
 
-  const deleteTodo = (id) => {
-    setTodos(todos.filter(todo => todo.id !== id));
-  };
+    const filteredTodos = todos.filter(todo => {
+        if (filter === 'completed') return todo.completed;
+        if (filter === 'active') return !todo.completed;
+        return true;
+    });
 
-  return (
-    <div className="todo-container">
-      <div className="todo-header">
-        <h1>Todo List</h1>
-        <button onClick={handleLogout} className="logout-button">Çıkış Yap</button>
-      </div>
+    return (
+        <div className="todo-container">
+            <div className="todo-header">
+                <h2>Todo List</h2>
+                <div className="user-info">
+                    <span>Hoş geldin, {user?.username}</span>
+                    <button onClick={handleLogout} className="logout-button">
+                        Çıkış Yap
+                    </button>
+                </div>
+            </div>
 
-      <form onSubmit={handleSubmit} className="todo-form">
-        <input
-          type="text"
-          value={newTodo}
-          onChange={(e) => setNewTodo(e.target.value)}
-          placeholder="Yeni görev ekle..."
-          className="todo-input"
-        />
-        <button type="submit" className="add-button">Ekle</button>
-      </form>
-
-      <ul className="todo-list">
-        {todos.map(todo => (
-          <li key={todo.id} className={`todo-item ${todo.completed ? 'completed' : ''}`}>
-            <input
-              type="checkbox"
-              checked={todo.completed}
-              onChange={() => toggleTodo(todo.id)}
-            />
-            <span className="todo-text">{todo.text}</span>
-            <button
-              onClick={() => deleteTodo(todo.id)}
-              className="delete-button"
+            <Formik
+                initialValues={{ text: '', category: 'Genel' }}
+                validationSchema={todoSchema}
+                onSubmit={handleSubmit}
             >
-              Sil
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+                {({ errors, touched }) => (
+                    <Form className="todo-form">
+                        <div className="form-group">
+                            <Field
+                                type="text"
+                                name="text"
+                                placeholder="Yeni todo ekle..."
+                                className={errors.text && touched.text ? 'error' : ''}
+                            />
+                            {errors.text && touched.text && (
+                                <div className="error-message">{errors.text}</div>
+                            )}
+                        </div>
+
+                        <div className="form-group">
+                            <Field
+                                as="select"
+                                name="category"
+                                className={errors.category && touched.category ? 'error' : ''}
+                            >
+                                <option value="Genel">Genel</option>
+                                <option value="İş">İş</option>
+                                <option value="Kişisel">Kişisel</option>
+                                <option value="Alışveriş">Alışveriş</option>
+                            </Field>
+                            {errors.category && touched.category && (
+                                <div className="error-message">{errors.category}</div>
+                            )}
+                        </div>
+
+                        <button type="submit" disabled={loading}>
+                            {loading ? 'Ekleniyor...' : 'Ekle'}
+                        </button>
+                    </Form>
+                )}
+            </Formik>
+
+            <div className="filter-buttons">
+                <button
+                    className={filter === 'all' ? 'active' : ''}
+                    onClick={() => setFilter('all')}
+                >
+                    Tümü
+                </button>
+                <button
+                    className={filter === 'active' ? 'active' : ''}
+                    onClick={() => setFilter('active')}
+                >
+                    Aktif
+                </button>
+                <button
+                    className={filter === 'completed' ? 'active' : ''}
+                    onClick={() => setFilter('completed')}
+                >
+                    Tamamlanan
+                </button>
+            </div>
+
+            <div className="todo-list">
+                {filteredTodos.map((todo) => (
+                    <div
+                        key={todo._id}
+                        className={`todo-item ${todo.completed ? 'completed' : ''}`}
+                    >
+                        <div className="todo-content">
+                            <input
+                                type="checkbox"
+                                checked={todo.completed}
+                                onChange={() => handleToggleComplete(todo)}
+                            />
+                            <span className="todo-text">{todo.text}</span>
+                            <span className="todo-category">{todo.category}</span>
+                        </div>
+                        <button
+                            className="delete-button"
+                            onClick={() => handleDelete(todo._id)}
+                        >
+                            Sil
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 };
 
 export default TodoList; 

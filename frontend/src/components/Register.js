@@ -1,98 +1,122 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import { Formik, Form, Field } from 'formik';
+import * as Yup from 'yup';
+import { toast } from 'react-toastify';
+import { register, clearError } from '../store/slices/authSlice';
 import './Register.css';
 
+const registerSchema = Yup.object().shape({
+    username: Yup.string()
+        .min(3, 'Kullanıcı adı en az 3 karakter olmalıdır')
+        .required('Kullanıcı adı zorunludur'),
+    email: Yup.string()
+        .email('Geçerli bir email adresi giriniz')
+        .required('Email adresi zorunludur'),
+    password: Yup.string()
+        .min(6, 'Şifre en az 6 karakter olmalıdır')
+        .required('Şifre zorunludur'),
+    confirmPassword: Yup.string()
+        .oneOf([Yup.ref('password'), null], 'Şifreler eşleşmiyor')
+        .required('Şifre tekrarı zorunludur')
+});
+
 const Register = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const { loading, error, isAuthenticated } = useSelector((state) => state.auth);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/');
+        }
+    }, [isAuthenticated, navigate]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      setError('Şifreler eşleşmiyor');
-      return;
-    }
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+            dispatch(clearError());
+        }
+    }, [error, dispatch]);
 
-    try {
-      await axios.post('http://localhost:3001/api/auth/register', {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password
-      });
-      navigate('/login');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Kayıt olurken bir hata oluştu');
-    }
-  };
+    const handleSubmit = async (values) => {
+        const { confirmPassword, ...registerData } = values;
+        dispatch(register(registerData));
+    };
 
-  return (
-    <div className="register-container">
-      <div className="register-box">
-        <h2>Hesap Oluştur</h2>
-        {error && <div className="error-message">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Ad Soyad:</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Email:</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Şifre:</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Şifre Tekrar:</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <button type="submit" className="register-button">Hesap Oluştur</button>
-        </form>
-        <p className="login-link">
-          Zaten hesabınız var mı? <Link to="/login">Giriş Yap</Link>
-        </p>
-      </div>
-    </div>
-  );
+    return (
+        <div className="register-container">
+            <div className="register-box">
+                <h2>Kayıt Ol</h2>
+                <Formik
+                    initialValues={{ username: '', email: '', password: '', confirmPassword: '' }}
+                    validationSchema={registerSchema}
+                    onSubmit={handleSubmit}
+                >
+                    {({ errors, touched }) => (
+                        <Form>
+                            <div className="form-group">
+                                <Field
+                                    type="text"
+                                    name="username"
+                                    placeholder="Kullanıcı Adı"
+                                    className={errors.username && touched.username ? 'error' : ''}
+                                />
+                                {errors.username && touched.username && (
+                                    <div className="error-message">{errors.username}</div>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <Field
+                                    type="email"
+                                    name="email"
+                                    placeholder="Email"
+                                    className={errors.email && touched.email ? 'error' : ''}
+                                />
+                                {errors.email && touched.email && (
+                                    <div className="error-message">{errors.email}</div>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <Field
+                                    type="password"
+                                    name="password"
+                                    placeholder="Şifre"
+                                    className={errors.password && touched.password ? 'error' : ''}
+                                />
+                                {errors.password && touched.password && (
+                                    <div className="error-message">{errors.password}</div>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <Field
+                                    type="password"
+                                    name="confirmPassword"
+                                    placeholder="Şifre Tekrarı"
+                                    className={errors.confirmPassword && touched.confirmPassword ? 'error' : ''}
+                                />
+                                {errors.confirmPassword && touched.confirmPassword && (
+                                    <div className="error-message">{errors.confirmPassword}</div>
+                                )}
+                            </div>
+
+                            <button type="submit" disabled={loading}>
+                                {loading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
+                            </button>
+                        </Form>
+                    )}
+                </Formik>
+
+                <p className="login-link">
+                    Zaten hesabınız var mı? <Link to="/login">Giriş Yap</Link>
+                </p>
+            </div>
+        </div>
+    );
 };
 
 export default Register; 
