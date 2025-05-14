@@ -1,9 +1,16 @@
 {
-  "name": "todolist-root",
-  "private": true,
+  "name": "todolist",
+  "version": "1.0.0",
+  "description": "Todo List Application",
+  "main": "index.js",
   "scripts": {
-    "start": "concurrently \"npm start --prefix backend\" \"npm start --prefix frontend\""
+    "start": "concurrently \"npm start --prefix backend\" \"npm start --prefix frontend\"",
+    "install-all": "npm install && npm install --prefix frontend && npm install --prefix backend",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
