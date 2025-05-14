@@ -1,9 +1,16 @@
 document.addEventListener("DOMContentLoaded", () => {
-    /* ---------- Offline Queue & Cache Keys ---------- */
+    // ——— Token Kontrolü & Redirect ———
+    const token = localStorage.getItem("token");
+    if (!token) {
+        window.location = "/login";
+        return;
+    }
+
+    // ——— Offline Queue & Cache Keys ———
     const OFFLINE_QUEUE_KEY = "todo_offline_queue";
     const OFFLINE_CACHE_KEY = "todo_offline_cache";
 
-    /* ---------- Helper: Queue & Cache Management ---------- */
+    // ——— Queue & Cache Helper’ları ———
     function getQueue() {
         return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
     }
@@ -17,30 +24,37 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem(OFFLINE_CACHE_KEY, JSON.stringify(data));
     }
 
-    /* ---------- syncFetch Wrapper ---------- */
+    // ——— syncFetch: Online/Offline ve Auth Header ———
     function syncFetch(url, options = {}) {
+        const opts = {
+            ...options,
+            headers: {
+                ...(options.headers || {}),
+                Authorization: `Bearer ${token}`
+            }
+        };
         if (navigator.onLine) {
-            return fetch(url, options)
+            return fetch(url, opts)
                 .then(res => res.json())
                 .then(data => {
-                    if (url === "/api/todos" && options.method === "GET") {
+                    if (url === "/api/todos" && opts.method === "GET") {
                         setCache(data);
                     }
                     return data;
                 });
         } else {
             const queue = getQueue();
-            queue.push({ url, options });
+            queue.push({ url, options: opts });
             setQueue(queue);
             return Promise.resolve(
-                options.method === "GET"
+                opts.method === "GET"
                     ? getCache()
                     : {}
             );
         }
     }
 
-    /* ---------- Element Referansları ---------- */
+    // ——— Element Referansları ———
     const form          = document.getElementById("todoForm");
     const input         = document.getElementById("todoInput");
     const categoryInput = document.getElementById("todoCategory");
@@ -48,25 +62,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const submitBtn     = form.querySelector("button[type='submit']");
     const toggleBtn     = document.getElementById("toggleCompleted");
     const filterSelect  = document.getElementById("filterCategory");
-    const token = localStorage.getItem("token");
-    if (!token) {
-        // Token yoksa login sayfasına geri gönder
-        window.location = "/login";
-    }
-// syncFetch veya authFetch fonksiyonları header’a Authorization eklesin:
-    function authFetch(url, opts = {}) {
-        return fetch(url, {
-            ...opts,
-            headers: {
-                ...(opts.headers||{}),
-                Authorization: `Bearer ${token}`
-            }
-        }).then(r => r.json());
-    }
-    /* ---------- State ---------- */
+
+    // ——— State ———
     let hideCompleted = false;
 
-    /* ---------- Sayfa Açılışında & Senkronize Online Olduğunda ---------- */
+    // ——— Todos’u Yükle & Senkronize Et ———
     function loadTodos() {
         list.innerHTML = "";
         syncFetch("/api/todos", { method: "GET" })
@@ -75,7 +75,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     window.addEventListener("online", () => {
         const queue = getQueue();
-        // sıradaki tüm istekleri işleyip sonra temizle
         queue.reduce((p, req) => {
             return p.then(() => fetch(req.url, req.options));
         }, Promise.resolve())
@@ -87,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     loadTodos();
 
-    /* ---------- Form Submit: Ekle / Güncelle ---------- */
+    // ——— Form Submit: Ekle / Güncelle ———
     form.addEventListener("submit", e => {
         e.preventDefault();
         const text     = input.value.trim();
@@ -96,7 +95,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!text) return alert("Boş todo eklenemez!");
 
         if (editId) {
-            // Güncelle
             syncFetch(`/api/todos/${editId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -106,7 +104,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 loadTodos();
             });
         } else {
-            // Yeni
             syncFetch("/api/todos", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -118,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    /* ---------- UI: Todo Ekleme ---------- */
+    // ——— UI: Todo Ekleme ———
     function addTodoToUI(todo) {
         if (filterSelect.value !== "Hepsi" && todo.category !== filterSelect.value) return;
 
@@ -172,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
         list.appendChild(li);
     }
 
-    /* ---------- Toggle Completed ---------- */
+    // ——— Tamamlananları Gizle / Göster ———
     toggleBtn.addEventListener("click", () => {
         hideCompleted = !hideCompleted;
         document.querySelectorAll("#todoList li").forEach(li => {
@@ -184,10 +181,10 @@ document.addEventListener("DOMContentLoaded", () => {
             : "🫣 Tamamlananları Gizle";
     });
 
-    /* ---------- Filter by Category ---------- */
+    // ——— Kategori Filtresi ———
     filterSelect.addEventListener("change", loadTodos);
 
-    /* ---------- Helper: Form Reset ---------- */
+    // ——— Yardımcı: Formu Sıfırla ———
     function resetForm() {
         input.value = "";
         categoryInput.value = "Genel";
