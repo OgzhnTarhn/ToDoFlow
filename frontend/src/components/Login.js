@@ -39,7 +39,7 @@ const Login = () => {
 
       // Token'ı localStorage'a kaydet
       localStorage.setItem('token', data.token);
-      
+
       // Ana sayfaya yönlendir
       navigate('/dashboard');
     } catch (err) {
@@ -48,38 +48,38 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-box">
-        <h2>Giriş Yap</h2>
-        {error && <div className="error-message">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Email:</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Şifre:</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <button type="submit" className="auth-button">Giriş Yap</button>
-        </form>
-        <p className="auth-switch">
-          Hesabınız yok mu? <a href="/register">Kayıt Ol</a>
-        </p>
+      <div className="auth-container">
+        <div className="auth-box">
+          <h2>Giriş Yap</h2>
+          {error && <div className="error-message">{error}</div>}
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Email:</label>
+              <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+              />
+            </div>
+            <div className="form-group">
+              <label>Şifre:</label>
+              <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+              />
+            </div>
+            <button type="submit" className="auth-button">Giriş Yap</button>
+          </form>
+          <p className="auth-switch">
+            Hesabınız yok mu? <a href="/register">Kayıt Ol</a>
+          </p>
+        </div>
       </div>
-    </div>
   );
 };
 
