@@ -53,12 +53,50 @@ function authMiddleware(req, res, next) {
         return res.status(401).json({ error: "Token geçersiz veya süresi dolmuş" });
     }
 }
+// ——— Kullanıcı Kayıt (Register) ———
+app.post("/api/auth/register", async (req, res) => {
+    const { username, password } = req.body;
+    // 1) Alan kontrolü
+    if (!username || !password) {
+        return res.status(400).json({ error: "Kullanıcı adı ve şifre gerekli." });
+    }
+    // 2) Mevcut kullanıcıyı kontrol et
+    const users = readUsers();
+    if (users.find(u => u.username === username)) {
+        return res.status(409).json({ error: "Bu kullanıcı adı zaten alınmış." });
+    }
+    // 3) Şifreyi hash’le
+    const passwordHash = await bcrypt.hash(password, 10);
+    // 4) Yeni kullanıcıyı kaydet
+    users.push({ id: Date.now(), username, passwordHash });
+    writeUsers(users);
+    res.status(201).json({ message: "Kayıt başarılı. Giriş yapabilirsin." });
+});
+// ——— Kullanıcı Giriş (Login) ———
+app.post("/api/auth/login", async (req, res) => {
+    const { username, password } = req.body;
+    // 1) Kullanıcıyı bul
+    const users = readUsers();
+    const user = users.find(u => u.username === username);
+    if (!user) {
+        return res.status(401).json({ error: "Kullanıcı bulunamadı." });
+    }
+    // 2) Parolayı doğrula
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) {
+        return res.status(403).json({ error: "Şifre yanlış." });
+    }
+    // 3) JWT oluştur
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "2h" });
+    res.json({ token });
+});
 
 // Tüm todo'ları getir
 app.get("/api/todos", (req, res) => {
     const todos = readData();
     res.json(todos);
 });
+
 
 // Yeni todo ekle (kategori de alır)
 app.post("/api/todos", (req, res) => {
