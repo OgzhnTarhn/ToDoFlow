@@ -92,22 +92,22 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 // Tüm todo'ları getir
-app.get("/api/todos", (req, res) => {
-    const todos = readData();
+app.get("/api/todos", authMiddleware, (req, res) => {
+    const todos = readData().filter(t => t.userId === req.userId);
     res.json(todos);
 });
 
 
 // Yeni todo ekle (kategori de alır)
-app.post("/api/todos", (req, res) => {
-    const { text, category } = req.body;
+app.post("/api/todos", authMiddleware, (req, res) => {
     const todos = readData();
     const newTodo = {
         id: Date.now(),
-        text,
-        category: category || "Genel",
+        text     : req.body.text,
+        category : req.body.category || "Genel",
         createdAt: new Date().toISOString(),
-        completed: false
+        completed: false,
+        userId   : req.userId     // ← burası eklendi
     };
     todos.push(newTodo);
     writeData(todos);
@@ -115,24 +115,25 @@ app.post("/api/todos", (req, res) => {
 });
 
 // Todo güncelle (text, category veya completed)
-app.put("/api/todos/:id", (req, res) => {
+app.put("/api/todos/:id", authMiddleware, (req, res) => {
     let todos = readData();
-    const index = todos.findIndex(todo => todo.id == req.params.id);
-    if (index !== -1) {
-        todos[index] = { ...todos[index], ...req.body };
-        writeData(todos);
-        res.status(200).json(todos[index]);
-    } else {
-        res.status(404).json({ error: "Todo bulunamadı." });
-    }
+    const idx = todos.findIndex(t =>
+        t.id == req.params.id && t.userId === req.userId
+    );
+    if (idx === -1) return res.status(404).json({ error: "Todo bulunamadı veya yetkiniz yok." });
+    todos[idx] = { ...todos[idx], ...req.body };
+    writeData(todos);
+    res.json(todos[idx]);
 });
 
 // Todo sil
-app.delete("/api/todos/:id", (req, res) => {
+app.delete("/api/todos/:id", authMiddleware, (req, res) => {
     let todos = readData();
-    todos = todos.filter(todo => todo.id != req.params.id);
-    writeData(todos);
-    res.status(200).json({ message: "Silindi" });
+    const filtered = todos.filter(t =>
+        !(t.id == req.params.id && t.userId === req.userId)
+    );
+    writeData(filtered);
+    res.json({ message: "Silindi" });
 });
 
 app.listen(PORT, () => {
