@@ -1,29 +1,43 @@
 const express = require("express");
-const fs = require("fs");
-const path = require("path");
-const app = express();
-const PORT = 3000;
+const fs      = require("fs");
+const path    = require("path");
+const bcrypt  = require("bcrypt");
+const jwt     = require("jsonwebtoken");
+
+const app        = express();
+const PORT       = 3000;
+const DATA_FILE  = path.join(__dirname, "data.json");
+const USERS_FILE = path.join(__dirname, "users.json");
+const JWT_SECRET = "ÇOK_GİZLİ_SIFRE"; // Gerçekte .env’te tut
+
+/// ——— Todo veri dosyasını oku/yaz ———
+function readData() {
+    try {
+        return JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+    } catch {
+        return [];
+    }
+}
+function writeData(todos) {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(todos, null, 2));
+}
+
+// ——— Kullanıcı veri dosyasını oku/yaz ———
+function readUsers() {
+    try {
+        return JSON.parse(fs.readFileSync(USERS_FILE, "utf-8"));
+    } catch {
+        return [];
+    }
+}
+function writeUsers(users) {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "../public")));
 
-function readData() {
-    try {
-        const data = fs.readFileSync(path.join(__dirname, "data.json"), "utf-8");
-        return JSON.parse(data);
-    } catch (err) {
-        console.error("Veri okuma hatası:", err.message);
-        return [];
-    }
-}
 
-function writeData(todos) {
-    try {
-        fs.writeFileSync(path.join(__dirname, "data.json"), JSON.stringify(todos, null, 2));
-    } catch (err) {
-        console.error("Veri yazma hatası:", err.message);
-    }
-}
 
 // Tüm todo'ları getir
 app.get("/api/todos", (req, res) => {
