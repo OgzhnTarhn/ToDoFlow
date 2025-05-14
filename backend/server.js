@@ -36,8 +36,23 @@ function writeUsers(users) {
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "../public")));
-
-
+// ——— Auth Middleware ———
+// Bu fonksiyon, her istekte Authorization header’ını kontrol eder.
+// Geçerli bir JWT yoksa 401 döner; varsa req.userId’yi ayarlar.
+function authMiddleware(req, res, next) {
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Token eksik veya yanlış format" });
+    }
+    const token = auth.split(" ")[1];
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        req.userId = payload.userId;  // downstream route’larda kullanacağız
+        next();
+    } catch (err) {
+        return res.status(401).json({ error: "Token geçersiz veya süresi dolmuş" });
+    }
+}
 
 // Tüm todo'ları getir
 app.get("/api/todos", (req, res) => {
