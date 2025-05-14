@@ -1,35 +1,65 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Auth.css';
 
 const Register = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
     if (formData.password !== formData.confirmPassword) {
-      alert('Şifreler eşleşmiyor!');
+      setError('Şifreler eşleşmiyor!');
       return;
     }
-    // API çağrısı burada yapılacak
-    console.log('Register attempt:', formData);
+
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Kayıt olurken bir hata oluştu');
+      }
+
+      // Başarılı kayıt sonrası login sayfasına yönlendir
+      navigate('/login', { state: { message: 'Kayıt başarılı! Giriş yapabilirsiniz.' } });
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
     <div className="auth-container">
       <div className="auth-box">
         <h2>Kayıt Ol</h2>
+        {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Kullanıcı Adı:</label>
