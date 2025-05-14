@@ -1,85 +1,59 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './Auth.css';
+import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
+import './Login.css';
 
 const Login = () => {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-    setError(''); // Hata mesajını temizle
-  };
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
     try {
-      const response = await fetch('http://localhost:3001/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      const response = await axios.post('http://localhost:3001/api/auth/login', {
+        email,
+        password
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Giriş yapılırken bir hata oluştu');
-      }
-
-      // Token'ı localStorage'a kaydet
-      localStorage.setItem('token', data.token);
-
-      // Ana sayfaya yönlendir
-      navigate('/dashboard');
+      localStorage.setItem('token', response.data.token);
+      navigate('/todos');
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || 'Giriş yapılırken bir hata oluştu');
     }
   };
 
   return (
-      <div className="auth-container">
-        <div className="auth-box">
-          <h2>Giriş Yap</h2>
-          {error && <div className="error-message">{error}</div>}
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Email:</label>
-              <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-              />
-            </div>
-            <div className="form-group">
-              <label>Şifre:</label>
-              <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-              />
-            </div>
-            <button type="submit" className="auth-button">Giriş Yap</button>
-          </form>
-          <p className="auth-switch">
-            Hesabınız yok mu? <a href="/register">Kayıt Ol</a>
-          </p>
-        </div>
+    <div className="login-container">
+      <div className="login-box">
+        <h2>Giriş Yap</h2>
+        {error && <div className="error-message">{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Email:</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Şifre:</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button type="submit" className="login-button">Giriş Yap</button>
+        </form>
+        <p className="register-link">
+          Hesabınız yok mu? <Link to="/register">Hesap Oluştur</Link>
+        </p>
       </div>
+    </div>
   );
 };
 
