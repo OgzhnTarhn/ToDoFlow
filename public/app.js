@@ -48,7 +48,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const submitBtn     = form.querySelector("button[type='submit']");
     const toggleBtn     = document.getElementById("toggleCompleted");
     const filterSelect  = document.getElementById("filterCategory");
-
+    const token = localStorage.getItem("token");
+    if (!token) {
+        // Token yoksa login sayfasına geri gönder
+        window.location = "/login";
+    }
+// syncFetch veya authFetch fonksiyonları header’a Authorization eklesin:
+    function authFetch(url, opts = {}) {
+        return fetch(url, {
+            ...opts,
+            headers: {
+                ...(opts.headers||{}),
+                Authorization: `Bearer ${token}`
+            }
+        }).then(r => r.json());
+    }
     /* ---------- State ---------- */
     let hideCompleted = false;
 
