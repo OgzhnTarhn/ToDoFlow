@@ -4,18 +4,22 @@ const path = require('path');
 const sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: path.join(__dirname, '../database.sqlite'),
-    logging: false
+    logging: console.log,
+    define: {
+        timestamps: true
+    }
 });
 
 const connectDB = async () => {
     try {
         await sequelize.authenticate();
         console.log('SQLite veritabanına bağlantı başarılı.');
-        await sequelize.sync();
+        
+        await sequelize.sync({ force: false });
         console.log('Veritabanı modelleri senkronize edildi.');
     } catch (error) {
         console.error('Veritabanı bağlantı hatası:', error);
-        process.exit(1);
+        throw error;
     }
 };
 

@@ -3,6 +3,11 @@ const { sequelize } = require('../config/db');
 const bcrypt = require('bcryptjs');
 
 const User = sequelize.define('User', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
     username: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -31,8 +36,8 @@ const User = sequelize.define('User', {
     }
 });
 
-User.prototype.matchPassword = async function(enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
+User.prototype.comparePassword = async function(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
 };
 
 module.exports = User; 

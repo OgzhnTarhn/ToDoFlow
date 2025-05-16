@@ -5,8 +5,13 @@ require('dotenv').config();
 
 const app = express();
 
+// CORS ayarları
+app.use(cors({
+    origin: 'http://localhost:3000', // React uygulamasının çalıştığı port
+    credentials: true
+}));
+
 // Middleware
-app.use(cors());
 app.use(express.json());
 
 // Routes
@@ -15,15 +20,26 @@ app.use('/api/todos', require('./routes/todos'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Bir şeyler ters gitti!' });
+    console.error('Hata:', err);
+    res.status(500).json({ 
+        message: 'Bir şeyler ters gitti!',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
 });
 
 const PORT = process.env.PORT || 3001;
 
-// Veritabanı bağlantısı ve sunucuyu başlat
-connectDB().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Server ${PORT} portunda çalışıyor`);
-    });
-});
+// Önce veritabanı bağlantısını kur, sonra sunucuyu başlat
+const startServer = async () => {
+    try {
+        await connectDB();
+        app.listen(PORT, () => {
+            console.log(`Server ${PORT} portunda çalışıyor`);
+        });
+    } catch (error) {
+        console.error('Sunucu başlatma hatası:', error);
+        process.exit(1);
+    }
+};
+
+startServer();

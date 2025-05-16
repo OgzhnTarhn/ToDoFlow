@@ -1,122 +1,145 @@
-import React, { useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { Formik, Form, Field } from 'formik';
-import * as Yup from 'yup';
-import { toast } from 'react-toastify';
-import { register, clearError } from '../store/slices/authSlice';
-import './Register.css';
+import React, { useState } from 'react';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import {
+  Container,
+  Paper,
+  TextField,
+  Button,
+  Typography,
+  Link,
+  Box,
+  Alert,
+} from '@mui/material';
+import { useAuth } from '../context/AuthContext';
 
-const registerSchema = Yup.object().shape({
-    username: Yup.string()
-        .min(3, 'Kullanıcı adı en az 3 karakter olmalıdır')
-        .required('Kullanıcı adı zorunludur'),
-    email: Yup.string()
-        .email('Geçerli bir email adresi giriniz')
-        .required('Email adresi zorunludur'),
-    password: Yup.string()
-        .min(6, 'Şifre en az 6 karakter olmalıdır')
-        .required('Şifre zorunludur'),
-    confirmPassword: Yup.string()
-        .oneOf([Yup.ref('password'), null], 'Şifreler eşleşmiyor')
-        .required('Şifre tekrarı zorunludur')
-});
+function Register() {
+  const navigate = useNavigate();
+  const { register } = useAuth();
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [error, setError] = useState('');
 
-const Register = () => {
-    const navigate = useNavigate();
-    const dispatch = useDispatch();
-    const { loading, error, isAuthenticated } = useSelector((state) => state.auth);
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
-    useEffect(() => {
-        if (isAuthenticated) {
-            navigate('/');
-        }
-    }, [isAuthenticated, navigate]);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
 
-    useEffect(() => {
-        if (error) {
-            toast.error(error);
-            dispatch(clearError());
-        }
-    }, [error, dispatch]);
+    if (formData.password !== formData.confirmPassword) {
+      setError('Şifreler eşleşmiyor');
+      return;
+    }
 
-    const handleSubmit = async (values) => {
-        const { confirmPassword, ...registerData } = values;
-        dispatch(register(registerData));
-    };
+    const result = await register(formData.username, formData.email, formData.password);
+    if (result.success) {
+      navigate('/');
+    } else {
+      setError(result.error);
+    }
+  };
 
-    return (
-        <div className="register-container">
-            <div className="register-box">
-                <h2>Kayıt Ol</h2>
-                <Formik
-                    initialValues={{ username: '', email: '', password: '', confirmPassword: '' }}
-                    validationSchema={registerSchema}
-                    onSubmit={handleSubmit}
-                >
-                    {({ errors, touched }) => (
-                        <Form>
-                            <div className="form-group">
-                                <Field
-                                    type="text"
-                                    name="username"
-                                    placeholder="Kullanıcı Adı"
-                                    className={errors.username && touched.username ? 'error' : ''}
-                                />
-                                {errors.username && touched.username && (
-                                    <div className="error-message">{errors.username}</div>
-                                )}
-                            </div>
-
-                            <div className="form-group">
-                                <Field
-                                    type="email"
-                                    name="email"
-                                    placeholder="Email"
-                                    className={errors.email && touched.email ? 'error' : ''}
-                                />
-                                {errors.email && touched.email && (
-                                    <div className="error-message">{errors.email}</div>
-                                )}
-                            </div>
-
-                            <div className="form-group">
-                                <Field
-                                    type="password"
-                                    name="password"
-                                    placeholder="Şifre"
-                                    className={errors.password && touched.password ? 'error' : ''}
-                                />
-                                {errors.password && touched.password && (
-                                    <div className="error-message">{errors.password}</div>
-                                )}
-                            </div>
-
-                            <div className="form-group">
-                                <Field
-                                    type="password"
-                                    name="confirmPassword"
-                                    placeholder="Şifre Tekrarı"
-                                    className={errors.confirmPassword && touched.confirmPassword ? 'error' : ''}
-                                />
-                                {errors.confirmPassword && touched.confirmPassword && (
-                                    <div className="error-message">{errors.confirmPassword}</div>
-                                )}
-                            </div>
-
-                            <button type="submit" disabled={loading}>
-                                {loading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
-                            </button>
-                        </Form>
-                    )}
-                </Formik>
-
-                <p className="login-link">
-                    Zaten hesabınız var mı? <Link to="/login">Giriş Yap</Link>
-                </p>
-            </div>
-        </div>
-    );
-};
+  return (
+    <Container component="main" maxWidth="xs">
+      <Box
+        sx={{
+          marginTop: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <Paper
+          elevation={3}
+          sx={{
+            padding: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            width: '100%',
+          }}
+        >
+          <Typography component="h1" variant="h5">
+            Kayıt Ol
+          </Typography>
+          {error && (
+            <Alert severity="error" sx={{ width: '100%', mt: 2 }}>
+              {error}
+            </Alert>
+          )}
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="username"
+              label="Kullanıcı Adı"
+              name="username"
+              autoComplete="username"
+              autoFocus
+              value={formData.username}
+              onChange={handleChange}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="Email Adresi"
+              name="email"
+              autoComplete="email"
+              value={formData.email}
+              onChange={handleChange}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label="Şifre"
+              type="password"
+              id="password"
+              autoComplete="new-password"
+              value={formData.password}
+              onChange={handleChange}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="confirmPassword"
+              label="Şifre Tekrar"
+              type="password"
+              id="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+            />
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2 }}
+            >
+              Kayıt Ol
+            </Button>
+            <Box sx={{ textAlign: 'center' }}>
+              <Link component={RouterLink} to="/login" variant="body2">
+                Zaten hesabınız var mı? Giriş yapın
+              </Link>
+            </Box>
+          </Box>
+        </Paper>
+      </Box>
+    </Container>
+  );
+}
 
 export default Register; 

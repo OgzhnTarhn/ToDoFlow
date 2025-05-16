@@ -1,91 +1,116 @@
-import React, { useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { Formik, Form, Field } from 'formik';
-import * as Yup from 'yup';
-import { toast } from 'react-toastify';
-import { login, clearError } from '../store/slices/authSlice';
-import './Login.css';
+import React, { useState } from 'react';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import {
+  Container,
+  Paper,
+  TextField,
+  Button,
+  Typography,
+  Link,
+  Box,
+  Alert,
+} from '@mui/material';
+import { useAuth } from '../context/AuthContext';
 
-const loginSchema = Yup.object().shape({
-    email: Yup.string()
-        .email('Geçerli bir email adresi giriniz')
-        .required('Email adresi zorunludur'),
-    password: Yup.string()
-        .min(6, 'Şifre en az 6 karakter olmalıdır')
-        .required('Şifre zorunludur')
-});
+function Login() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
+  const [error, setError] = useState('');
 
-const Login = () => {
-    const navigate = useNavigate();
-    const dispatch = useDispatch();
-    const { loading, error, isAuthenticated } = useSelector((state) => state.auth);
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
-    useEffect(() => {
-        if (isAuthenticated) {
-            navigate('/');
-        }
-    }, [isAuthenticated, navigate]);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
 
-    useEffect(() => {
-        if (error) {
-            toast.error(error);
-            dispatch(clearError());
-        }
-    }, [error, dispatch]);
+    const result = await login(formData.email, formData.password);
+    if (result.success) {
+      navigate('/');
+    } else {
+      setError(result.error);
+    }
+  };
 
-    const handleSubmit = async (values) => {
-        dispatch(login(values));
-    };
-
-    return (
-        <div className="login-container">
-            <div className="login-box">
-                <h2>Giriş Yap</h2>
-                <Formik
-                    initialValues={{ email: '', password: '' }}
-                    validationSchema={loginSchema}
-                    onSubmit={handleSubmit}
-                >
-                    {({ errors, touched }) => (
-                        <Form>
-                            <div className="form-group">
-                                <Field
-                                    type="email"
-                                    name="email"
-                                    placeholder="Email"
-                                    className={errors.email && touched.email ? 'error' : ''}
-                                />
-                                {errors.email && touched.email && (
-                                    <div className="error-message">{errors.email}</div>
-                                )}
-                            </div>
-
-                            <div className="form-group">
-                                <Field
-                                    type="password"
-                                    name="password"
-                                    placeholder="Şifre"
-                                    className={errors.password && touched.password ? 'error' : ''}
-                                />
-                                {errors.password && touched.password && (
-                                    <div className="error-message">{errors.password}</div>
-                                )}
-                            </div>
-
-                            <button type="submit" disabled={loading}>
-                                {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-                            </button>
-                        </Form>
-                    )}
-                </Formik>
-
-                <p className="register-link">
-                    Hesabınız yok mu? <Link to="/register">Kayıt Ol</Link>
-                </p>
-            </div>
-        </div>
-    );
-};
+  return (
+    <Container component="main" maxWidth="xs">
+      <Box
+        sx={{
+          marginTop: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <Paper
+          elevation={3}
+          sx={{
+            padding: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            width: '100%',
+          }}
+        >
+          <Typography component="h1" variant="h5">
+            Giriş Yap
+          </Typography>
+          {error && (
+            <Alert severity="error" sx={{ width: '100%', mt: 2 }}>
+              {error}
+            </Alert>
+          )}
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="Email Adresi"
+              name="email"
+              autoComplete="email"
+              autoFocus
+              value={formData.email}
+              onChange={handleChange}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label="Şifre"
+              type="password"
+              id="password"
+              autoComplete="current-password"
+              value={formData.password}
+              onChange={handleChange}
+            />
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2 }}
+            >
+              Giriş Yap
+            </Button>
+            <Box sx={{ textAlign: 'center' }}>
+              <Link component={RouterLink} to="/register" variant="body2">
+                Hesabınız yok mu? Kayıt olun
+              </Link>
+            </Box>
+          </Box>
+        </Paper>
+      </Box>
+    </Container>
+  );
+}
 
 export default Login; 

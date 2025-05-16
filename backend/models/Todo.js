@@ -3,22 +3,35 @@ const { sequelize } = require('../config/db');
 const User = require('./User');
 
 const Todo = sequelize.define('Todo', {
-    text: {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    title: {
         type: DataTypes.STRING,
         allowNull: false
+    },
+    description: {
+        type: DataTypes.TEXT,
+        allowNull: true
     },
     completed: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
-    category: {
-        type: DataTypes.STRING,
-        defaultValue: 'Genel'
+    userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: User,
+            key: 'id'
+        }
     }
 });
 
 // İlişkileri tanımla
-Todo.belongsTo(User);
-User.hasMany(Todo);
+Todo.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(Todo, { foreignKey: 'userId' });
 
 module.exports = Todo; 

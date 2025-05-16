@@ -1,166 +1,185 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Formik, Form, Field } from 'formik';
-import * as Yup from 'yup';
-import { toast } from 'react-toastify';
-import { logout } from '../store/slices/authSlice';
-import { fetchTodos, createTodo, updateTodo, deleteTodo, clearError } from '../store/slices/todoSlice';
-import './TodoList.css';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Paper,
+  TextField,
+  Button,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  IconButton,
+  Checkbox,
+  Box,
+  AppBar,
+  Toolbar,
+} from '@mui/material';
+import {
+  Delete as DeleteIcon,
+  Add as AddIcon,
+  Logout as LogoutIcon,
+} from '@mui/icons-material';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
-const todoSchema = Yup.object().shape({
-    text: Yup.string()
-        .required('Todo metni zorunludur')
-        .min(3, 'Todo metni en az 3 karakter olmalıdır'),
-    category: Yup.string()
-        .required('Kategori zorunludur')
-});
+function TodoList() {
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
+  const [todos, setTodos] = useState([]);
+  const [newTodo, setNewTodo] = useState({ title: '', description: '' });
+  const [error, setError] = useState('');
 
-const TodoList = () => {
-    const dispatch = useDispatch();
-    const { todos, loading, error } = useSelector((state) => state.todos);
-    const { user } = useSelector((state) => state.auth);
-    const [filter, setFilter] = useState('all');
+  useEffect(() => {
+    fetchTodos();
+  }, []);
 
-    useEffect(() => {
-        dispatch(fetchTodos());
-    }, [dispatch]);
+  const fetchTodos = async () => {
+    try {
+      const response = await axios.get('http://localhost:3001/api/todos');
+      setTodos(response.data);
+    } catch (error) {
+      setError('Todolar yüklenirken bir hata oluştu');
+    }
+  };
 
-    useEffect(() => {
-        if (error) {
-            toast.error(error);
-            dispatch(clearError());
-        }
-    }, [error, dispatch]);
+  const handleAddTodo = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post('http://localhost:3001/api/todos', newTodo);
+      setTodos([...todos, response.data]);
+      setNewTodo({ title: '', description: '' });
+    } catch (error) {
+      setError('Todo eklenirken bir hata oluştu');
+    }
+  };
 
-    const handleSubmit = async (values, { resetForm }) => {
-        await dispatch(createTodo(values));
-        resetForm();
-    };
+  const handleToggleComplete = async (id, completed) => {
+    try {
+      const todo = todos.find(t => t.id === id);
+      const response = await axios.put(`http://localhost:3001/api/todos/${id}`, {
+        ...todo,
+        completed: !completed
+      });
+      setTodos(todos.map(t => t.id === id ? response.data : t));
+    } catch (error) {
+      setError('Todo güncellenirken bir hata oluştu');
+    }
+  };
 
-    const handleToggleComplete = async (todo) => {
-        dispatch(updateTodo({
-            id: todo._id,
-            todoData: { completed: !todo.completed }
-        }));
-    };
+  const handleDeleteTodo = async (id) => {
+    try {
+      await axios.delete(`http://localhost:3001/api/todos/${id}`);
+      setTodos(todos.filter(todo => todo.id !== id));
+    } catch (error) {
+      setError('Todo silinirken bir hata oluştu');
+    }
+  };
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Bu todo\'yu silmek istediğinizden emin misiniz?')) {
-            dispatch(deleteTodo(id));
-        }
-    };
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
-    const handleLogout = () => {
-        dispatch(logout());
-    };
+  return (
+    <Box sx={{ flexGrow: 1 }}>
+      <AppBar position="static">
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            Hoş geldin, {user?.username}!
+          </Typography>
+          <IconButton color="inherit" onClick={handleLogout}>
+            <LogoutIcon />
+          </IconButton>
+        </Toolbar>
+      </AppBar>
 
-    const filteredTodos = todos.filter(todo => {
-        if (filter === 'completed') return todo.completed;
-        if (filter === 'active') return !todo.completed;
-        return true;
-    });
-
-    return (
-        <div className="todo-container">
-            <div className="todo-header">
-                <h2>Todo List</h2>
-                <div className="user-info">
-                    <span>Hoş geldin, {user?.username}</span>
-                    <button onClick={handleLogout} className="logout-button">
-                        Çıkış Yap
-                    </button>
-                </div>
-            </div>
-
-            <Formik
-                initialValues={{ text: '', category: 'Genel' }}
-                validationSchema={todoSchema}
-                onSubmit={handleSubmit}
+      <Container maxWidth="md" sx={{ mt: 4 }}>
+        <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h5" component="h2" gutterBottom>
+            Yeni Todo Ekle
+          </Typography>
+          <Box component="form" onSubmit={handleAddTodo}>
+            <TextField
+              fullWidth
+              label="Başlık"
+              value={newTodo.title}
+              onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Açıklama"
+              value={newTodo.description}
+              onChange={(e) => setNewTodo({ ...newTodo, description: e.target.value })}
+              margin="normal"
+              multiline
+              rows={2}
+            />
+            <Button
+              type="submit"
+              variant="contained"
+              startIcon={<AddIcon />}
+              sx={{ mt: 2 }}
             >
-                {({ errors, touched }) => (
-                    <Form className="todo-form">
-                        <div className="form-group">
-                            <Field
-                                type="text"
-                                name="text"
-                                placeholder="Yeni todo ekle..."
-                                className={errors.text && touched.text ? 'error' : ''}
-                            />
-                            {errors.text && touched.text && (
-                                <div className="error-message">{errors.text}</div>
-                            )}
-                        </div>
+              Ekle
+            </Button>
+          </Box>
+        </Paper>
 
-                        <div className="form-group">
-                            <Field
-                                as="select"
-                                name="category"
-                                className={errors.category && touched.category ? 'error' : ''}
-                            >
-                                <option value="Genel">Genel</option>
-                                <option value="İş">İş</option>
-                                <option value="Kişisel">Kişisel</option>
-                                <option value="Alışveriş">Alışveriş</option>
-                            </Field>
-                            {errors.category && touched.category && (
-                                <div className="error-message">{errors.category}</div>
-                            )}
-                        </div>
-
-                        <button type="submit" disabled={loading}>
-                            {loading ? 'Ekleniyor...' : 'Ekle'}
-                        </button>
-                    </Form>
-                )}
-            </Formik>
-
-            <div className="filter-buttons">
-                <button
-                    className={filter === 'all' ? 'active' : ''}
-                    onClick={() => setFilter('all')}
-                >
-                    Tümü
-                </button>
-                <button
-                    className={filter === 'active' ? 'active' : ''}
-                    onClick={() => setFilter('active')}
-                >
-                    Aktif
-                </button>
-                <button
-                    className={filter === 'completed' ? 'active' : ''}
-                    onClick={() => setFilter('completed')}
-                >
-                    Tamamlanan
-                </button>
-            </div>
-
-            <div className="todo-list">
-                {filteredTodos.map((todo) => (
-                    <div
-                        key={todo._id}
-                        className={`todo-item ${todo.completed ? 'completed' : ''}`}
-                    >
-                        <div className="todo-content">
-                            <input
-                                type="checkbox"
-                                checked={todo.completed}
-                                onChange={() => handleToggleComplete(todo)}
-                            />
-                            <span className="todo-text">{todo.text}</span>
-                            <span className="todo-category">{todo.category}</span>
-                        </div>
-                        <button
-                            className="delete-button"
-                            onClick={() => handleDelete(todo._id)}
-                        >
-                            Sil
-                        </button>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-};
+        <Paper elevation={3} sx={{ p: 3 }}>
+          <Typography variant="h5" component="h2" gutterBottom>
+            Todolarım
+          </Typography>
+          {error && (
+            <Typography color="error" sx={{ mb: 2 }}>
+              {error}
+            </Typography>
+          )}
+          <List>
+            {todos.map((todo) => (
+              <ListItem
+                key={todo.id}
+                sx={{
+                  bgcolor: 'background.paper',
+                  mb: 1,
+                  borderRadius: 1,
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                  },
+                }}
+              >
+                <Checkbox
+                  edge="start"
+                  checked={todo.completed}
+                  onChange={() => handleToggleComplete(todo.id, todo.completed)}
+                />
+                <ListItemText
+                  primary={todo.title}
+                  secondary={todo.description}
+                  sx={{
+                    textDecoration: todo.completed ? 'line-through' : 'none',
+                    color: todo.completed ? 'text.secondary' : 'text.primary',
+                  }}
+                />
+                <ListItemSecondaryAction>
+                  <IconButton
+                    edge="end"
+                    aria-label="delete"
+                    onClick={() => handleDeleteTodo(todo.id)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </ListItemSecondaryAction>
+              </ListItem>
+            ))}
+          </List>
+        </Paper>
+      </Container>
+    </Box>
+  );
+}
 
 export default TodoList; 
