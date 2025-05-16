@@ -15,6 +15,10 @@ import {
   Box,
   AppBar,
   Toolbar,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -24,20 +28,37 @@ import {
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
+// Sabit kategoriler
+const DEFAULT_CATEGORIES = [
+  { name: 'Genel', color: '#808080', id: 1 },
+  { name: 'Ev', color: '#4caf50', id: 2 },
+  { name: 'Okul', color: '#2196f3', id: 3 },
+  { name: 'İş', color: '#ff9800', id: 4 },
+  { name: 'Sağlık', color: '#e91e63', id: 5 },
+  { name: 'Alışveriş', color: '#9c27b0', id: 6 },
+  { name: 'Kişisel', color: '#f44336', id: 7 },
+  { name: 'Diğer', color: '#607d8b', id: 8 }
+];
+
 function TodoList() {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const [todos, setTodos] = useState([]);
-  const [newTodo, setNewTodo] = useState({ title: '', description: '' });
+  const [newTodo, setNewTodo] = useState({ title: '', description: '', categoryId: '' });
   const [error, setError] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   useEffect(() => {
     fetchTodos();
-  }, []);
+  }, [selectedCategory]);
 
   const fetchTodos = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/todos');
+      let url = 'http://localhost:3001/api/todos';
+      if (selectedCategory) {
+        url += `?category=${selectedCategory}`;
+      }
+      const response = await axios.get(url);
       setTodos(response.data);
     } catch (error) {
       setError('Todolar yüklenirken bir hata oluştu');
@@ -49,7 +70,7 @@ function TodoList() {
     try {
       const response = await axios.post('http://localhost:3001/api/todos', newTodo);
       setTodos([...todos, response.data]);
-      setNewTodo({ title: '', description: '' });
+      setNewTodo({ title: '', description: '', categoryId: '' });
     } catch (error) {
       setError('Todo eklenirken bir hata oluştu');
     }
@@ -118,6 +139,33 @@ function TodoList() {
               multiline
               rows={2}
             />
+            <FormControl fullWidth margin="normal">
+              <InputLabel id="category-label">Kategori</InputLabel>
+              <Select
+                labelId="category-label"
+                value={newTodo.categoryId}
+                label="Kategori"
+                onChange={(e) => setNewTodo({ ...newTodo, categoryId: e.target.value })}
+              >
+                <MenuItem value="">
+                  <em>Seçiniz</em>
+                </MenuItem>
+                {DEFAULT_CATEGORIES.map((cat) => (
+                  <MenuItem key={cat.id} value={cat.id}>
+                    <span style={{
+                      display: 'inline-block',
+                      width: 14,
+                      height: 14,
+                      borderRadius: '50%',
+                      backgroundColor: cat.color,
+                      marginRight: 8,
+                      verticalAlign: 'middle'
+                    }} />
+                    {cat.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <Button
               type="submit"
               variant="contained"
@@ -133,6 +181,33 @@ function TodoList() {
           <Typography variant="h5" component="h2" gutterBottom>
             Todolarım
           </Typography>
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="filter-category-label">Kategoriye Göre Filtrele</InputLabel>
+            <Select
+              labelId="filter-category-label"
+              value={selectedCategory}
+              label="Kategoriye Göre Filtrele"
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              <MenuItem value="">
+                <em>Tümü</em>
+              </MenuItem>
+              {DEFAULT_CATEGORIES.map((cat) => (
+                <MenuItem key={cat.id} value={cat.id}>
+                  <span style={{
+                    display: 'inline-block',
+                    width: 14,
+                    height: 14,
+                    borderRadius: '50%',
+                    backgroundColor: cat.color,
+                    marginRight: 8,
+                    verticalAlign: 'middle'
+                  }} />
+                  {cat.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           {error && (
             <Typography color="error" sx={{ mb: 2 }}>
               {error}
@@ -157,7 +232,21 @@ function TodoList() {
                   onChange={() => handleToggleComplete(todo.id, todo.completed)}
                 />
                 <ListItemText
-                  primary={todo.title}
+                  primary={
+                    <span>
+                      {todo.title}
+                      <span style={{
+                        backgroundColor: (DEFAULT_CATEGORIES.find(c => c.id === todo.categoryId) || {}).color,
+                        color: '#fff',
+                        borderRadius: 8,
+                        padding: '2px 8px',
+                        fontSize: 12,
+                        marginLeft: 10
+                      }}>
+                        {(DEFAULT_CATEGORIES.find(c => c.id === todo.categoryId) || {}).name}
+                      </span>
+                    </span>
+                  }
                   secondary={todo.description}
                   sx={{
                     textDecoration: todo.completed ? 'line-through' : 'none',

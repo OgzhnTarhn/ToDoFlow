@@ -1,5 +1,17 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Category = require('../models/Category');
+
+const DEFAULT_CATEGORIES = [
+    { name: 'Genel', color: '#808080' },
+    { name: 'Ev', color: '#4caf50' },
+    { name: 'Okul', color: '#2196f3' },
+    { name: 'İş', color: '#ff9800' },
+    { name: 'Sağlık', color: '#e91e63' },
+    { name: 'Alışveriş', color: '#9c27b0' },
+    { name: 'Kişisel', color: '#f44336' },
+    { name: 'Diğer', color: '#607d8b' }
+];
 
 const protect = async (req, res, next) => {
     try {
@@ -20,6 +32,14 @@ const protect = async (req, res, next) => {
         const user = await User.findByPk(decoded.id);
         if (!user) {
             return res.status(401).json({ message: 'Yetkilendirme hatası: Kullanıcı bulunamadı' });
+        }
+
+        // Kullanıcı için sabit kategorileri oluştur (eksik olanları ekle)
+        for (const cat of DEFAULT_CATEGORIES) {
+            const exists = await Category.findOne({ where: { userId: user.id, name: cat.name } });
+            if (!exists) {
+                await Category.create({ ...cat, userId: user.id });
+            }
         }
 
         // Kullanıcı bilgisini request'e ekle

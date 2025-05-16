@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Todo = require('../models/Todo');
+const Category = require('../models/Category');
 const { protect } = require('../middleware/auth');
 
 // Tüm route'lar için authentication gerekli
@@ -35,10 +36,21 @@ router.post('/', [
             return res.status(400).json({ errors: errors.array() });
         }
 
+        let categoryId = req.body.categoryId;
+        // Eğer kategori seçilmemişse, "Genel" kategorisini bul veya oluştur
+        if (!categoryId) {
+            let genel = await Category.findOne({ where: { userId: req.user.id, name: 'Genel' } });
+            if (!genel) {
+                genel = await Category.create({ name: 'Genel', color: '#808080', userId: req.user.id });
+            }
+            categoryId = genel.id;
+        }
+
         const todo = await Todo.create({
             title: req.body.title,
             description: req.body.description,
-            userId: req.user.id
+            userId: req.user.id,
+            categoryId
         });
 
         res.status(201).json(todo);
