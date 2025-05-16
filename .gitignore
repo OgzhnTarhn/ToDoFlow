@@ -49,4 +49,9 @@ Desktop.ini
 
 # User data
 users.json
-data.json 
+data.json
+
+# New additions
+.env
+database.sqlite
+*.log 
