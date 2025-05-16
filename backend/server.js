@@ -2,6 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const { connectDB } = require('./config/db');
 require('dotenv').config();
+const User = require('./models/User');
+const Category = require('./models/Category');
+const Todo = require('./models/Todo');
 
 const app = express();
 
@@ -17,6 +20,16 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/todos', require('./routes/todos'));
+
+// Model ilişkileri
+User.hasMany(Todo, { foreignKey: 'userId' });
+Todo.belongsTo(User, { foreignKey: 'userId' });
+
+User.hasMany(Category, { foreignKey: 'userId' });
+Category.belongsTo(User, { foreignKey: 'userId' });
+
+Category.hasMany(Todo, { foreignKey: 'categoryId' });
+Todo.belongsTo(Category, { foreignKey: 'categoryId' });
 
 // Error handling middleware
 app.use((err, req, res, next) => {

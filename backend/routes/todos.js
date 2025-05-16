@@ -10,8 +10,12 @@ router.use(protect);
 // Tüm todoları getir
 router.get('/', async (req, res) => {
     try {
+        const filter = { userId: req.user.id };
+        if (req.query.category) {
+            filter.categoryId = req.query.category;
+        }
         const todos = await Todo.findAll({
-            where: { userId: req.user.id },
+            where: filter,
             order: [['createdAt', 'DESC']]
         });
         res.json(todos);

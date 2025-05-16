@@ -3,11 +3,10 @@ const Category = require('../models/Category');
 // Kategori oluştur
 exports.createCategory = async (req, res) => {
     try {
-        const category = new Category({
+        const category = await Category.create({
             ...req.body,
-            user: req.user._id
+            userId: req.user.id
         });
-        await category.save();
         res.status(201).json(category);
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -17,7 +16,10 @@ exports.createCategory = async (req, res) => {
 // Kullanıcının kategorilerini getir
 exports.getCategories = async (req, res) => {
     try {
-        const categories = await Category.find({ user: req.user._id });
+        const categories = await Category.findAll({
+            where: { userId: req.user.id },
+            order: [['createdAt', 'DESC']]
+        });
         res.json(categories);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -27,15 +29,17 @@ exports.getCategories = async (req, res) => {
 // Kategori güncelle
 exports.updateCategory = async (req, res) => {
     try {
-        const category = await Category.findOneAndUpdate(
-            { _id: req.params.id, user: req.user._id },
-            req.body,
-            { new: true }
-        );
-        if (!category) {
+        const [updated] = await Category.update(req.body, {
+            where: {
+                id: req.params.id,
+                userId: req.user.id
+            }
+        });
+        if (!updated) {
             return res.status(404).json({ message: 'Kategori bulunamadı' });
         }
-        res.json(category);
+        const updatedCategory = await Category.findOne({ where: { id: req.params.id } });
+        res.json(updatedCategory);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
@@ -44,11 +48,13 @@ exports.updateCategory = async (req, res) => {
 // Kategori sil
 exports.deleteCategory = async (req, res) => {
     try {
-        const category = await Category.findOneAndDelete({
-            _id: req.params.id,
-            user: req.user._id
+        const deleted = await Category.destroy({
+            where: {
+                id: req.params.id,
+                userId: req.user.id
+            }
         });
-        if (!category) {
+        if (!deleted) {
             return res.status(404).json({ message: 'Kategori bulunamadı' });
         }
         res.json({ message: 'Kategori silindi' });

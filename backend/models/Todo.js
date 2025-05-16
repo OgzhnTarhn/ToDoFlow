@@ -26,6 +26,14 @@ const Todo = sequelize.define('Todo', {
             model: 'Users',
             key: 'id'
         }
+    },
+    categoryId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+            model: 'Categories',
+            key: 'id'
+        }
     }
 }, {
     timestamps: true
